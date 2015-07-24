@@ -1,13 +1,19 @@
 require 'phony'
-require 'iso3166'
 require 'phony_rails/string_extensions'
 require 'validators/phony_validator'
 require 'phony_rails/version'
+require 'yaml'
 
 module PhonyRails
 
   def self.country_number_for(country_code)
-    ISO3166::Country::Data[country_code.to_s.upcase].try(:[], 'country_code')
+    return if country_code.nil?
+
+    country_codes_hash[country_code.to_s.upcase]['country_code']
+  end
+
+  def self.country_codes_hash
+    YAML.load_file(File.join(__dir__, 'data/country_codes.yaml'))
   end
 
   # This method requires a country_code attribute (eg. NL) and phone_number to be set.
@@ -59,7 +65,7 @@ module PhonyRails
   def self.plausible_number?(number, options = {})
     return false if number.nil? || number.blank?
     number = normalize_number(number, options)
-    country_number = options[:country_number] || country_number_for(options[:country_code]) || 
+    country_number = options[:country_number] || country_number_for(options[:country_code]) ||
       default_country_number = options[:default_country_number] || country_number_for(options[:default_country_code])
     Phony.plausible? number, cc: country_number
   rescue
